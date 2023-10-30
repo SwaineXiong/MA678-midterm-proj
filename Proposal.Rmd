@@ -1,0 +1,49 @@
+---
+title: "MA 678 Midterm Project Proposal"
+author: "Chenxuan Xiong"
+date: "2023-10-30"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Personal Statement
+What is your career goal and how this project aligns with the goal.
+
+
+
+
+## Question
+Preliminary question that you are going to try to answer. (you can change as you see necessary)
+
+
+
+
+## Data Source
+Clear link to where you got the data from.  If this is your personal data, clearly state what it is.
+
+
+
+## Proposed Timeline of Work: 
+EDA: 
+Data Processing:
+Modeling and Validation:
+Write up:
+
+Once written, please submit an editable link on the blackboard for grading. 
+
+
+## Oral presentation: 
+1min on Flipgrid. (10)
+
+
+
+
+
+
+
+
+
+
