@@ -32,8 +32,7 @@ colnames(tmp2)[19:77] <- new_column_names
 
 write.csv(tmp2,file = "cleaned_data2.csv")
 
-
-
+d <- read.csv("cleaned_data2.csv")
 
 
 

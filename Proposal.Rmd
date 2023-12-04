@@ -12,24 +12,25 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Personal Statement
 My short-term career goal is to pursue a role as a data analyst or data scientist within a software company, focusing on the fields of market and product analysis. Looking further ahead, my long-term objective is to collaborate with friends from different backgrounds to create an independent game.  
 
- Market analysis holds a crucial place in the success of software companies, particularly in the context of the rapidly evolving software market. There is fierce competition in the software market. In contrast to industries like clothing or other manufacturing, where changes in fashion might last for several decades. Software trends shift quickly. In order to attract new customers and retain existing users, any product, no matter how old, needs to update often to catch the lastest fashion. Video games are subject to this law as well. And it might be the most complex field since there are hundreds of thousands of games. Steam, the largest video game platform globally, hosts a vast array of games, ranging from AAA to indie creations. With almost 30,000 games in its store, Steam's store leaderboard essentially reflects the current trends in the global gaming industry. This Steam game EDA looked at the video game industry. It's a sound method of conducting market research.
+ Market analysis holds a crucial place in the success of companies, particularly in the context of the rapidly evolving software market. There is fierce competition in the software market. In contrast to industries like clothing or other manufacturing, where changes in fashion might last for several decades. Software trends shift quickly. In order to attract new customers and retain existing users, any product, no matter how old, needs to update often to catch the lastest fashion. Video games are subject to this law as well. And it might be the most complex field in the software competition since there are hundreds of thousands of games. Steam, the largest video game platform globally, hosts a vast array of games, ranging from AAA to indie creations. With almost 30,000 games in its store, Steam's store leaderboard essentially reflects the current trends in the global gaming industry. This Steam game EDA looked at the video game industry. It's a sound method of conducting market research.
 
 
+## Research Objective
+1. What's the most popular game type these days?
+2. Predict characteristics the next hot game might have.
+3. What's the reasonable price interval for a typical type of game?
 
-
-## Question
-Preliminary question that you are going to try to answer. (you can change as you see necessary)
-What's the most popular game type these days?
-What's the reasonable price interval for a typical type of game?
-Predict characteristics the next hot game might have.
 
 
 ## Data Source
-Clear link to where you got the data from.  If this is your personal data, clearly state what it is.
 The data is downloaded on Kaggle: https://www.kaggle.com/datasets/nikatomashvili/steam-games-dataset/data.    
 The data is gathered by scraping the rolling page of the steam search site in early September.  
 Steam search site:https://store.steampowered.com/search/?category1=998&ndl=1&ignore_preferences=1. 
 The data include: namely name, price, discounted price, release date...    
+
+
+## Litrature Review
+Thesedays more and more people are willing to pay for digital content. Consumer's willing to pay driving the size of the game market. The global video game market size was estimated at USD 217.06 billion in 2022 and is expected to grow at a compound annual growth rate (CAGR) of 13.4% from 2023 to 2030. As the industry is growing, and the ratio of paid game keeps increase. The pricing of video games become more important. Reasonable game price functions not just as a signal of a game's value but also as a sign of a game's legitimacy or it's lack in the eyes of developers and the larger game industry.
 
 
 ## Proposed Timeline of Work: 
