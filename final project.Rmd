@@ -1,0 +1,307 @@
+---
+title: "MA678 Final Project"
+author: "Chenxuan Xiong"
+date: "2023-12-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Cleaning
+
+```{r}
+data <- read.csv("cleaned_data.csv")
+dim(data)
+
+
+##Cleaning for Game.Features
+library(dplyr)
+data$Game.Features <- gsub("\\[", "", data$Game.Features)
+data$Game.Features <- gsub("\\]", "", data$Game.Features)
+tmp1 <- unlist(strsplit(data$Game.Features, ","))
+uniq_feature <- unique(tmp1)
+data1 <- data
+
+
+for (features in uniq_feature){
+  data1[[features]] <- 0
+}
+dim(data1)
+
+tmp2 <- data1
+for (features in uniq_feature){
+  tmp2[,features] <- ifelse(grepl(features, tmp2$Game.Features), 1, 0)
+}
+
+tmp3 <- tmp2[,19:77]
+column_names <- colnames(tmp3)
+new_column_names <- paste("Game.Feature.", column_names, sep = "")
+colnames(tmp2)[19:77] <- new_column_names
+
+##tmp2 the latest version of dataset
+
+write.csv(tmp2,file = "cleaned_data2.csv")
+
+d <- read.csv("cleaned_data2.csv")
+```
+
+
+## Data Selection
+
+We select the data with price<= 100 and row number <= 5000 to build model due to hardware limitation，this model can be extend to more data to get a more accuracy result.
+```{r}
+df <- read.csv("cleaned_data2.csv")
+library(dplyr)
+library(ggplot2)
+library(lme4)
+columnIndex1 <- which(names(df) == "Game.Feature.Single.player")
+columnIndex2 <- dim(df)[2]
+col_names <- colnames(df)
+df1 <- 
+  df%>%
+  filter(Original.Price >= 0L & Original.Price <= 100L)
+df1 <- df1[1:5000, ]
+```
+
+
+## EDA
+
+Plots for game features
+
+```{r}
+
+for (col_index in columnIndex1:columnIndex2) {
+  price_means <- df1 %>%
+    group_by(as.factor(df1[, col_index])) %>% 
+    summarise(price_mean = mean(Original.Price))
+    price_means <- as.data.frame(price_means)
+  
+
+    p <- ggplot(df1) + 
+      geom_density(aes(x = Original.Price, color = as.factor(df1[, col_index]))) +
+      geom_vline(data = price_means,
+                 aes(xintercept = price_means[,2], color = price_means[,1]),
+                 linetype = 'dashed')+
+      scale_color_discrete(name = "Feature status") + 
+      labs(x = "Price",y = "Density", title = col_names[col_index] )
+    print(p)
+    
+}
+```
+
+ANOVA for Processor
+```{r}
+model_Processor <- aov(Original.Price ~ Processor, data = df1)
+summary(model_Processor)
+```
+
+ANOVA for Memory
+```{r}
+model_Memory <- aov(Original.Price ~ Memory, data = df1)
+summary(model_Memory)
+```
+
+ANOVA for Graphics Series
+```{r}
+model_Graphics_Series <- aov(Original.Price ~ Graphics_Series, data = df1)
+summary(model_Graphics_Series)
+```
+
+Distribution of Price
+```{r}
+p1 <- ggplot(df1) + 
+  geom_density(aes(x = Original.Price)) +
+  labs(x = "Price",y = "Density", title = "Distribution of Price" )
+print(p1)
+```
+
+Null model on Price. We do a log transformation for Price is because it's strictly non-negative and left skewed.
+We add 1.01 instead of 1 is because we don't want log(price) to be 0.
+```{r}
+df2 = df1[,c(3,columnIndex3:columnIndex4)]
+df2_clean = na.omit(df2, cols = selected_variables)
+null_model <- lm(log(Original.Price+1.01) ~ 1, data = df2_clean) 
+summary(null_model)
+```
+
+
+Since we have too many variables, we need to find the dominant variables and remove the superfluous ones as much as possible. We use forward selection to find the main variables. And then drop variables shows high colinearity.
+```{r}
+## forward selection
+columnIndex3 <- which(names(df1) == "Processor")
+columnIndex4 <- length(column_names)
+
+
+df2 = df1[,c(3,columnIndex3:columnIndex4)]
+
+
+forward_selection <- function(data, response, max_vars = NULL) {
+  selected_vars <- c()
+  remaining_vars <- setdiff(names(data), response)
+  formula <- as.formula(paste(response, "~ 1"))
+  
+  while (length(selected_vars) < length(remaining_vars) && 
+         (is.null(max_vars) || length(selected_vars) < max_vars)) {
+    p_values <- numeric(length(remaining_vars))
+    
+    for (i in seq_along(remaining_vars)) {
+      candidate_vars <- c(selected_vars, remaining_vars[i])
+      candidate_formula <- as.formula(paste(response, "~", paste(candidate_vars, collapse = " + ")))
+      model <- lm(candidate_formula, data = data)
+      p_values[i] <- summary(model)$coefficients[2, 4]
+    }
+    
+    best_variable <- remaining_vars[which.min(p_values)]
+    selected_vars <- c(selected_vars, best_variable)
+    remaining_vars <- setdiff(remaining_vars, best_variable)
+  }
+  
+  return(selected_vars)
+}
+
+# Perform forward selection
+selected_variables <- forward_selection(df2, response = "Original.Price")
+
+# Display the selected variables
+print(selected_variables)
+```
+
+Build a complete-pooling model based on selected variables. We choose Gamma distribution and log link.
+```{r}
+complete_pooling_model <- glm(log(Original.Price+1.01) ~ Game.Feature.Single.player + 
+                                Game.Feature..Shared.Split.Screen.PvP + 
+                                Game.Feature..Tracked.Controller.Support +
+                                Game.Feature..Steam.Trading.Cards + 
+                                Game.Feature..Remote.Play.on.TV +
+                                Game.Feature..MMO + Game.Feature..Remote.Play.on.Tablet + 
+                                Game.Feature..VR.Supported +
+                                Game.Feature..SteamVR.Collectibles + 
+                                Game.Feature..Shared.Split.Screen.Co.op +
+                                Game.Feature..Captions.available + 
+                                Game.Feature..Steam.Workshop + 
+                                Game.Feature..Valve.Anti.Cheat.enabled +
+                                Game.Feature..LAN.PvP +
+                                Game.Feature..Includes.Source.SDK + 
+                                Game.Feature..Cross.Platform.Multiplayer ,
+                                family = Gamma(),data = df2_clean)
+
+summary(complete_pooling_model)
+```
+
+Build a partial-pooling model.
+```{r}
+partial_pooling_model <- lmer(log(Original.Price+1.01) ~ Game.Feature.Single.player + 
+                                Game.Feature..Shared.Split.Screen.PvP + 
+                                Game.Feature..Tracked.Controller.Support +
+                                Game.Feature..Steam.Trading.Cards + 
+                                Game.Feature..Remote.Play.on.TV +
+                                Game.Feature..MMO + 
+                                Game.Feature..Remote.Play.on.Tablet + 
+                                Game.Feature..VR.Supported +
+                                Game.Feature..SteamVR.Collectibles + 
+                                Game.Feature..Shared.Split.Screen.Co.op +
+                                Game.Feature..Captions.available  + 
+                                Game.Feature..Steam.Workshop + 
+                                Game.Feature..Valve.Anti.Cheat.enabled + 
+                                Game.Feature..LAN.PvP +
+                                Game.Feature..Includes.Source.SDK + 
+                                Game.Feature..Cross.Platform.Multiplayer +
+                                (1 | Memory),data = df2_clean)
+summary(partial_pooling_model)
+```
+
+Build a no-pooling model
+```{r}
+no_pooling_model = lmer(log(Original.Price+1.01) ~ Game.Feature.Single.player + 
+                          Game.Feature..Shared.Split.Screen.PvP + Game.Feature..Tracked.Controller.Support +
+                          Game.Feature..Steam.Trading.Cards + Game.Feature..Remote.Play.on.TV +
+                          Game.Feature..MMO + Game.Feature..Remote.Play.on.Tablet + Game.Feature..VR.Supported +
+                          Game.Feature..SteamVR.Collectibles + Game.Feature..Shared.Split.Screen.Co.op +
+                          Game.Feature..Captions.available  + Game.Feature..Steam.Workshop + 
+                          Game.Feature..Valve.Anti.Cheat.enabled + Game.Feature..LAN.PvP +
+                          Game.Feature..Includes.Source.SDK + Game.Feature..Cross.Platform.Multiplayer + 
+                          (1 + Game.Feature..LAN.Co.op |Memory), data = df2_clean)
+summary(no_pooling_model)
+```
+
+Use AIC to evaluate the models.
+```{r}
+AIC_no_pooling_model <- AIC(no_pooling_model)
+AIC_partial_pooling_model <- AIC(partial_pooling_model)
+AIC_complete_pooling_model <- AIC(complete_pooling_model)
+AIC_info <- data.frame(AIC_no_pooling_model,AIC_partial_pooling_model,AIC_complete_pooling_model)
+print(AIC_info)
+```
+
+Complete pooling model accuracy check
+```{r}
+df3 <- 
+  na.omit(df[5001:6000,])%>%
+  filter(Original.Price >= 0L & Original.Price <= 100L)
+  #subset(select = selected_variables)
+
+test_set <- df3 %>%
+  subset(select = selected_variables)
+
+y_observed <- df3 %>%
+  subset(select = "Original.Price")
+
+df4 <- cbind(Original.Price = y_observed, test_set)
+## The prediction seems better if the intercept of null model is added.
+predictions <- predict(complete_pooling_model, newdata = test_set, type = "response")+coef(null_model)[1]
+predictions2<- predict(complete_pooling_model, newdata = test_set, type = "response")
+
+y_observed <- as.numeric(unlist(y_observed))
+predictions <- as.numeric(predictions)
+predictions2 <- as.numeric(predictions2)
+res <- y_observed - predictions
+res2 <- y_observed - predictions2
+
+x <- seq(1:length(y_observed))
+plot_data <- data.frame(x, predictions,y_observed, res)
+plot_data2 <- data.frame(x, predictions2,y_observed, res2)
+
+
+p3 <- ggplot(data = plot_data, aes(x = x, y = predictions)) +
+  labs(x = "game index", y = "price" , title = "Price prediction plot")+
+  geom_line(data = plot_data, aes(y = y_observed), color = "orange", linewidth = 1) +
+  geom_line(data = plot_data, aes(y = predictions), color = "purple", linewidth = 1)
+p3
+
+p4 <- ggplot(plot_data, aes(x = x, y = res)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot", x = "Game index", y = "Residuals")
+p4
+
+mse1 <- mean((y_observed - predictions)^2)
+
+
+
+
+p5 <- ggplot(data = plot_data2, aes(x = x, y = predictions2)) +
+  labs(x = "game index", y = "price" , title = "Price prediction plot")+
+  geom_line(data = plot_data2, aes(y = y_observed), color = "orange", linewidth = 1) +
+  geom_line(data = plot_data2, aes(y = predictions2), color = "purple", linewidth = 1)
+p5
+
+p6 <- ggplot(plot_data2, aes(x = x, y = res2)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot", x = "Game index", y = "Residuals")
+p6
+
+mse2 <- mean((y_observed - predictions2)^2)
+```
+
+
+
+
+
+
+
+
+
+
